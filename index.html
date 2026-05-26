@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AI Interview Coach</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#07070f;--surface:#0f0f1a;--surface2:#161625;--border:#1e1e32;
+  --accent:#7c3aed;--accent2:#06b6d4;--accent3:#10b981;
+  --text:#e2e8f0;--muted:#64748b;--muted2:#475569;
+  --danger:#ef4444;--warn:#f59e0b;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Fira Code',monospace;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+html{font-size:16px;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh;}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);
+         display:flex;flex-direction:column;padding:1.5rem 1rem;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.main{display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.logo{display:flex;align-items:center;gap:.6rem;padding:.5rem 0 1.5rem;
+      font-size:1.1rem;font-weight:700;color:var(--text);}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+           border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.sb-section{margin-bottom:1.2rem;}
+.sb-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+           color:var(--muted);margin-bottom:.5rem;padding:0 .3rem;}
+.sb-select,.sb-range{width:100%;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);border-radius:8px;padding:.55rem .8rem;font-size:.85rem;font-family:var(--font);
+  cursor:pointer;appearance:none;outline:none;transition:border-color .2s;}
+.sb-select:focus,.sb-range:focus{border-color:var(--accent);}
+.sb-range{padding:.4rem .8rem;cursor:pointer;accent-color:var(--accent);}
+.range-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;}
+.range-val{font-size:.8rem;font-weight:600;color:var(--accent);font-family:var(--mono);}
+.sb-divider{border:none;border-top:1px solid var(--border);margin:1rem 0;}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+           padding:.8rem;text-align:center;margin-bottom:.6rem;}
+.stat-num{font-size:1.8rem;font-weight:700;font-family:var(--mono);
+           background:linear-gradient(135deg,var(--accent),var(--accent2));
+           -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:.2rem;}
+.sb-btn{width:100%;padding:.6rem;border:1px solid var(--border);background:transparent;
+        color:var(--muted);border-radius:8px;font-size:.82rem;cursor:pointer;
+        transition:all .2s;font-family:var(--font);margin-top:.4rem;}
+.sb-btn:hover{border-color:var(--accent);color:var(--accent);}
+.model-tag{font-size:.72rem;color:var(--accent2);margin-top:.3rem;padding:0 .3rem;}
+
+/* ── Tab bar ─────────────────────────────────────────────── */
+.tabbar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:.6rem 1.5rem 0;gap:.2rem;}
+.tab-btn{padding:.6rem 1.1rem;border:none;background:transparent;color:var(--muted);
+         font-size:.85rem;font-weight:500;cursor:pointer;border-radius:8px 8px 0 0;
+         transition:all .2s;font-family:var(--font);border-bottom:2px solid transparent;}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--accent);background:var(--surface2);}
+.tab-btn:hover:not(.active){color:var(--text);background:rgba(124,58,237,.08);}
+
+/* ── Tab panels ──────────────────────────────────────────── */
+.tab-panel{display:none;flex:1;padding:2rem;overflow-y:auto;}
+.tab-panel.active{display:block;}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.2rem;}
+.card-accent{background:linear-gradient(135deg,var(--surface),#140d2e);
+             border-color:var(--accent);box-shadow:0 0 24px rgba(124,58,237,.12);}
+
+/* ── Hero (start screen) ─────────────────────────────────── */
+.hero{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:60vh;text-align:center;gap:1rem;}
+.hero-icon{font-size:3.5rem;margin-bottom:.5rem;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hero-title{font-size:2rem;font-weight:700;color:var(--text);}
+.hero-tags{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;}
+.tag{padding:.3rem .8rem;border-radius:50px;font-size:.8rem;font-weight:500;}
+.tag-p{background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3);}
+.tag-b{background:rgba(6,182,212,.15);color:#67e8f9;border:1px solid rgba(6,182,212,.3);}
+.tag-g{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;
+     border:none;border-radius:10px;font-weight:600;font-size:.9rem;
+     cursor:pointer;transition:all .2s;font-family:var(--font);}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#5b21b6);color:#fff;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,.4);}
+.btn-primary:disabled{opacity:.35;transform:none;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25);}
+.btn-danger:hover{background:rgba(239,68,68,.2);}
+.btn-success{background:linear-gradient(135deg,var(--accent3),#059669);color:#fff;}
+.btn-success:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(16,185,129,.35);}
+.btn-lg{padding:.8rem 2rem;font-size:1rem;}
+.btn-full{width:100%;justify-content:center;}
+
+/* ── Progress ─────────────────────────────────────────────── */
+.progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;}
+.progress-label{font-size:.82rem;color:var(--muted);}
+.progress-pct{font-size:.82rem;font-weight:600;color:var(--accent);font-family:var(--mono);}
+.pbar{background:var(--border);border-radius:50px;height:6px;width:100%;margin-bottom:1.5rem;}
+.pbar-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease;}
+
+/* ── Question card ───────────────────────────────────────── */
+.q-type{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:600;
+         text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:.8rem;}
+.q-dot{width:7px;height:7px;border-radius:50%;background:var(--accent3);animation:pulse2 1.5s infinite;}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:.3}}
+.q-text{font-size:1.12rem;font-weight:500;line-height:1.65;color:var(--text);}
+
+/* ── Answer mode toggle ──────────────────────────────────── */
+.mode-toggle{display:flex;gap:.5rem;margin-bottom:1rem;}
+.mode-btn{padding:.45rem 1rem;border-radius:8px;border:1px solid var(--border);
+          background:transparent;color:var(--muted);font-size:.82rem;cursor:pointer;
+          transition:all .2s;font-family:var(--font);}
+.mode-btn.active{background:rgba(124,58,237,.15);border-color:var(--accent);color:var(--text);}
+
+/* ── Textarea ─────────────────────────────────────────────── */
+.answer-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);border-radius:10px;padding:1rem;font-size:.95rem;font-family:var(--font);
+  resize:vertical;min-height:130px;outline:none;transition:border-color .2s;line-height:1.6;}
+.answer-textarea:focus{border-color:var(--accent);}
+.answer-textarea::placeholder{color:var(--muted2);}
+
+/* ── Voice recorder ──────────────────────────────────────── */
+.voice-panel{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.2rem;}
+.voice-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;}
+.voice-status{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--muted);}
+.v-dot{width:8px;height:8px;border-radius:50%;background:var(--muted2);transition:background .3s;}
+.v-dot.rec{background:var(--danger);animation:blink .8s infinite;}
+.v-dot.done{background:var(--accent3);animation:none;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.v-timer{font-family:var(--mono);font-size:.82rem;color:var(--accent);}
+/* Waveform */
+.waveform{display:flex;align-items:center;justify-content:center;gap:3px;height:44px;margin:.6rem 0;}
+.wbar{width:4px;min-height:4px;border-radius:2px;background:var(--border);transition:height .07s,background .07s;}
+/* Transcript display */
+.transcript-display{background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.2);
+  border-radius:8px;padding:.9rem;min-height:64px;font-size:.92rem;line-height:1.6;
+  color:var(--text);margin:.8rem 0;word-break:break-word;}
+.transcript-interim{color:var(--muted);font-style:italic;}
+.transcript-empty{color:var(--muted2);font-style:italic;}
+/* Editable transcript */
+.transcript-edit{width:100%;background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.25);
+  color:var(--text);border-radius:8px;padding:.9rem;font-size:.92rem;font-family:var(--font);
+  resize:vertical;min-height:80px;outline:none;line-height:1.6;transition:border-color .2s;}
+.transcript-edit:focus{border-color:var(--accent);}
+.voice-btn-row{display:flex;gap:.6rem;margin-top:.6rem;}
+.voice-note{font-size:.75rem;color:var(--muted2);margin-top:.5rem;}
+
+/* ── Action row ──────────────────────────────────────────── */
+.action-row{display:flex;gap:.8rem;margin-top:1rem;}
+.action-row .btn-primary{flex:1;}
+
+/* ── Quick feedback ──────────────────────────────────────── */
+.feedback-card{background:rgba(6,182,212,.05);border:1px solid rgba(6,182,212,.2);
+               border-radius:10px;padding:1rem;margin-top:1rem;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.feedback-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;}
+.feedback-text{color:#cbd5e1;font-size:.9rem;line-height:1.5;}
+.score-badge{padding:.3rem .75rem;border-radius:50px;font-weight:700;font-size:.85rem;font-family:var(--mono);}
+.s-high{background:rgba(16,185,129,.15);color:var(--accent3);border:1px solid rgba(16,185,129,.3);}
+.s-mid {background:rgba(245,158,11,.15);color:var(--warn);border:1px solid rgba(245,158,11,.3);}
+.s-low {background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);}
+
+/* ── Complete screen ─────────────────────────────────────── */
+.complete-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;
+                 min-height:50vh;text-align:center;gap:1rem;}
+.complete-icon{font-size:4rem;animation:bounce .8s ease;}
+@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+/* ── Feedback tab ─────────────────────────────────────────── */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1.5rem;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+             padding:1rem;text-align:center;}
+.metric-num{font-size:1.9rem;font-weight:700;font-family:var(--mono);}
+.metric-lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:.3rem;}
+/* Mini bar chart */
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+            padding:1.2rem;margin-bottom:1.2rem;}
+.chart-title{font-size:.85rem;font-weight:600;color:var(--muted);margin-bottom:1rem;}
+.chart-bars{display:flex;align-items:flex-end;gap:.5rem;height:120px;}
+.chart-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:.3rem;}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--accent),var(--accent2));
+           transition:height .5s ease;min-height:3px;}
+.chart-qlbl{font-size:.7rem;color:var(--muted);font-family:var(--mono);}
+.chart-vlbl{font-size:.7rem;color:var(--accent);font-family:var(--mono);}
+/* Answer review */
+.review-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+             margin-bottom:.8rem;overflow:hidden;}
+.review-header{display:flex;align-items:center;justify-content:space-between;
+               padding:1rem 1.2rem;cursor:pointer;transition:background .2s;}
+.review-header:hover{background:var(--surface2);}
+.review-q{font-size:.88rem;font-weight:500;color:var(--text);flex:1;margin-right:1rem;}
+.review-body{padding:0 1.2rem 1.2rem;display:none;}
+.review-body.open{display:block;}
+.answer-text{background:var(--surface2);border-radius:8px;padding:.8rem;font-size:.88rem;
+             color:#cbd5e1;line-height:1.55;margin:.6rem 0 1rem;}
+.sub-scores{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.8rem;}
+.sub-score-item .label{font-size:.75rem;color:var(--muted);margin-bottom:.3rem;}
+.sub-pbar{background:var(--border);border-radius:50px;height:6px;}
+.sub-pbar-fill{height:100%;border-radius:50px;transition:width .4s ease;}
+.sub-val{font-size:.75rem;font-family:var(--mono);margin-top:.2rem;}
+.ai-feedback{background:rgba(6,182,212,.05);border:1px solid rgba(6,182,212,.2);
+             border-radius:8px;padding:.8rem;}
+.ai-fb-label{font-size:.75rem;font-weight:600;color:var(--accent2);margin-bottom:.4rem;}
+.ai-fb-text{font-size:.87rem;color:#cbd5e1;line-height:1.5;}
+/* Export */
+.export-row{display:flex;gap:.8rem;margin-top:1rem;}
+
+/* ── Resume tab ──────────────────────────────────────────── */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:2rem;
+             text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1rem;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(124,58,237,.05);}
+.upload-icon{font-size:2.5rem;margin-bottom:.6rem;}
+.file-input{display:none;}
+.uploaded-name{color:var(--accent2);font-size:.85rem;margin-top:.5rem;font-family:var(--mono);}
+
+/* ── Spinner ─────────────────────────────────────────────── */
+.spinner-overlay{position:fixed;inset:0;background:rgba(7,7,15,.85);
+                 display:flex;flex-direction:column;align-items:center;justify-content:center;
+                 z-index:1000;gap:1rem;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);
+         border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-text{color:var(--muted);font-size:.9rem;}
+
+/* ── Toast ───────────────────────────────────────────────── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);
+       border:1px solid var(--border);border-radius:10px;padding:.8rem 1.2rem;
+       font-size:.85rem;z-index:999;animation:slideIn .3s ease;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+@keyframes slideIn{from{transform:translateX(120%)}to{transform:translateX(0)}}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media(max-width:768px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{position:fixed;left:-280px;z-index:100;transition:left .3s;width:260px;}
+  .sidebar.open{left:0;}
+  .metrics-grid{grid-template-columns:repeat(2,1fr);}
+  .sub-scores{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- Spinner -->
+<div class="spinner-overlay" id="spinner" style="display:none;">
+  <div class="spinner"></div>
+  <div class="spinner-text" id="spinner-text">Loading…</div>
+</div>
+
+<div class="shell">
+
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🎯</div>
+    Interview Coach
+  </div>
+
+  <!-- Role -->
+  <div class="sb-section">
+    <div class="sb-label">Job Role</div>
+    <select class="sb-select" id="sb-role">
+      <option>Software Engineer</option><option>Data Scientist</option>
+      <option>ML Engineer</option><option>Frontend Developer</option>
+      <option>Backend Developer</option><option>Full Stack Developer</option>
+      <option>DevOps Engineer</option><option>Product Manager</option>
+      <option>Data Analyst</option>
+    </select>
+  </div>
+
+  <!-- Level -->
+  <div class="sb-section">
+    <div class="sb-label">Experience Level</div>
+    <select class="sb-select" id="sb-level">
+      <option>Fresher</option><option>Junior</option>
+      <option selected>Mid</option><option>Senior</option><option>Lead</option>
+    </select>
+  </div>
+
+  <!-- Type -->
+  <div class="sb-section">
+    <div class="sb-label">Interview Type</div>
+    <select class="sb-select" id="sb-type">
+      <option>HR</option><option>Technical</option><option>Mixed</option>
+    </select>
+  </div>
+
+  <!-- Questions -->
+  <div class="sb-section">
+    <div class="range-row">
+      <div class="sb-label" style="margin:0;">Questions</div>
+      <span class="range-val" id="sb-numval">5</span>
+    </div>
+    <input class="sb-range" type="range" id="sb-num" min="3" max="10" value="5"
+           oninput="document.getElementById('sb-numval').textContent=this.value">
+  </div>
+
+  <hr class="sb-divider">
+
+  <!-- Model -->
+  <div class="sb-section">
+    <div class="sb-label">Ollama Model</div>
+    <select class="sb-select" id="sb-model">
+      <option>llama3</option><option>mistral</option>
+      <option>phi3</option><option>deepseek-coder</option><option>tinyllama</option>
+    </select>
+    <div class="model-tag" id="model-tag">💡 Suggested: llama3</div>
+  </div>
+
+  <hr class="sb-divider">
+
+  <!-- Stats -->
+  <div class="stat-card" id="stat-card" style="display:none;">
+    <div class="stat-num" id="stat-avg">0.0</div>
+    <div class="stat-lbl">Avg Score / 10</div>
+  </div>
+  <div style="font-size:.78rem;color:var(--muted);text-align:center;" id="stat-count"></div>
+
+  <button class="sb-btn" id="reset-btn" onclick="resetSession()">🔄 Reset Session</button>
+</aside>
+
+<!-- ══════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- Tab bar -->
+  <div class="tabbar">
+    <button class="tab-btn active" onclick="showTab('interview')">🎤 Interview</button>
+    <button class="tab-btn" onclick="showTab('feedback')">📊 Feedback</button>
+    <button class="tab-btn" onclick="showTab('resume')">📄 Resume</button>
+    <button class="tab-btn" onclick="showTab('guide')">ℹ️ Setup</button>
+  </div>
+
+  <!-- ════════════════════ TAB: INTERVIEW ════════════════════ -->
+  <div class="tab-panel active" id="tab-interview">
+
+    <!-- START SCREEN -->
+    <div id="screen-start">
+      <div class="hero">
+        <div class="hero-icon">🚀</div>
+        <div class="hero-title">Ready to ace your interview?</div>
+        <div style="color:var(--muted);font-size:.95rem;">Configure your session in the sidebar, then hit Start.</div>
+        <div class="hero-tags" id="hero-tags">
+          <span class="tag tag-p" id="tag-role">Software Engineer</span>
+          <span class="tag tag-b" id="tag-level">Mid</span>
+          <span class="tag tag-g" id="tag-type">HR</span>
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="startInterview()">▶ Start Interview</button>
+      </div>
+    </div>
+
+    <!-- INTERVIEW SCREEN -->
+    <div id="screen-interview" style="display:none;">
+
+      <!-- Progress -->
+      <div class="progress-row">
+        <span class="progress-label" id="prog-label">Question 1 of 5</span>
+        <span class="progress-pct" id="prog-pct">0%</span>
+      </div>
+      <div class="pbar"><div class="pbar-fill" id="pbar-fill" style="width:0%"></div></div>
+
+      <!-- Question -->
+      <div class="card card-accent">
+        <div class="q-type"><span class="q-dot"></span><span id="q-type-label">HR Round</span></div>
+        <div class="q-text" id="q-text">Loading question…</div>
+      </div>
+
+      <!-- Answer mode -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-text-btn" onclick="setMode('text')">✍️ Text</button>
+        <button class="mode-btn" id="mode-voice-btn" onclick="setMode('voice')">🎤 Voice</button>
+      </div>
+
+      <!-- Text input -->
+      <div id="text-input-area">
+        <textarea class="answer-textarea" id="text-answer"
+          placeholder="Type your answer here… Be specific and use examples."></textarea>
+      </div>
+
+      <!-- Voice input -->
+      <div id="voice-input-area" style="display:none;">
+        <div class="voice-panel">
+          <div class="voice-status-row">
+            <div class="voice-status">
+              <div class="v-dot" id="v-dot"></div>
+              <span id="v-status-text">Ready — click Start Recording</span>
+            </div>
+            <span class="v-timer" id="v-timer">00:00</span>
+          </div>
+
+          <!-- Waveform bars -->
+          <div class="waveform" id="waveform"></div>
+
+          <!-- Live transcript display (read-only preview) -->
+          <div class="transcript-display" id="transcript-display">
+            <span class="transcript-empty">Your transcript will appear here as you speak…</span>
+          </div>
+
+          <!-- Editable transcript (what gets submitted) -->
+          <div id="transcript-edit-wrap" style="display:none;">
+            <div style="font-size:.75rem;color:var(--accent2);margin-bottom:.3rem;">
+              📝 Edit transcript if needed before submitting:
+            </div>
+            <textarea class="transcript-edit" id="transcript-edit"
+              placeholder="Transcript…"></textarea>
+          </div>
+
+          <!-- Buttons -->
+          <div class="voice-btn-row">
+            <button class="btn btn-primary" id="rec-btn" onclick="toggleRecording()">🎙 Start Recording</button>
+            <button class="btn btn-danger" onclick="clearVoice()">✕ Clear</button>
+          </div>
+          <div class="voice-note">Works in Chrome & Edge · No installs needed · Uses browser's built-in speech engine</div>
+        </div>
+      </div>
+
+      <!-- Quick feedback (shown after submit) -->
+      <div id="quick-feedback" style="display:none;"></div>
+
+      <!-- Action buttons -->
+      <div class="action-row">
+        <button class="btn btn-ghost" onclick="skipQuestion()">⏭ Skip</button>
+        <button class="btn btn-primary" id="submit-btn" onclick="submitAnswer()" disabled>✅ Submit Answer</button>
+      </div>
+    </div>
+
+    <!-- COMPLETE SCREEN -->
+    <div id="screen-complete" style="display:none;">
+      <div class="complete-screen">
+        <div class="complete-icon">🏆</div>
+        <div class="hero-title">Interview Complete!</div>
+        <div style="color:var(--muted);">Open the Feedback tab to see your full report.</div>
+        <button class="btn btn-primary btn-lg" onclick="showTab('feedback')">📊 View Report</button>
+      </div>
+    </div>
+
+  </div><!-- /tab-interview -->
+
+
+  <!-- ════════════════════ TAB: FEEDBACK ════════════════════ -->
+  <div class="tab-panel" id="tab-feedback">
+    <div id="feedback-empty" class="card" style="text-align:center;padding:3rem;">
+      <div style="font-size:2.5rem;margin-bottom:1rem;">📊</div>
+      <div style="color:var(--muted);">Complete an interview first to see your report here.</div>
+    </div>
+    <div id="feedback-content" style="display:none;">
+      <div class="metrics-grid" id="metrics-grid"></div>
+      <div class="chart-wrap">
+        <div class="chart-title">Score per Question</div>
+        <div class="chart-bars" id="chart-bars"></div>
+      </div>
+      <h3 style="margin-bottom:.8rem;font-size:1rem;color:var(--muted);">💬 Answer Review</h3>
+      <div id="answer-review"></div>
+      <div class="export-row">
+        <button class="btn btn-ghost" onclick="exportReport()">📥 Export JSON</button>
+        <button class="btn btn-ghost" onclick="printReport()">🖨 Print Report</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════ TAB: RESUME ════════════════════ -->
+  <div class="tab-panel" id="tab-resume">
+    <div class="card">
+      <h2 style="font-size:1.1rem;margin-bottom:.5rem;">📄 Resume-Based Interview</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:1.2rem;">
+        Paste your resume text below. The AI generates personalised questions based on your actual experience, projects, and skills.
+      </p>
+      <textarea class="answer-textarea" id="resume-text" style="min-height:220px;"
+        placeholder="Paste your resume text here… (You can copy-paste from PDF or Word)"></textarea>
+      <div style="margin-top:1rem;display:flex;gap:.8rem;">
+        <button class="btn btn-primary" onclick="startResumeInterview()">🔍 Generate Questions from Resume</button>
+        <button class="btn btn-ghost" onclick="clearResume()">✕ Clear</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════ TAB: GUIDE ════════════════════ -->
+  <div class="tab-panel" id="tab-guide">
+    <div class="card">
+      <h2 style="font-size:1.2rem;margin-bottom:1.2rem;color:var(--text);">🛠️ Setup Guide</h2>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="color:var(--accent);font-weight:600;margin-bottom:.5rem;">1 · Install Ollama</div>
+        <pre style="background:#050508;padding:1rem;border-radius:8px;color:var(--accent2);font-family:var(--mono);font-size:.82rem;white-space:pre-wrap;overflow-x:auto;">curl -fsSL https://ollama.ai/install.sh | sh
+ollama pull llama3
+ollama pull deepseek-coder</pre>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="color:var(--accent);font-weight:600;margin-bottom:.5rem;">2 · Install Python packages</div>
+        <pre style="background:#050508;padding:1rem;border-radius:8px;color:var(--accent2);font-family:var(--mono);font-size:.82rem;">pip install fastapi uvicorn ollama</pre>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="color:var(--accent);font-weight:600;margin-bottom:.5rem;">3 · Run the server</div>
+        <pre style="background:#050508;padding:1rem;border-radius:8px;color:var(--accent2);font-family:var(--mono);font-size:.82rem;">python server.py</pre>
+        <div style="color:var(--muted);font-size:.82rem;margin-top:.4rem;">Then open <span style="color:var(--accent2);">http://localhost:8000</span> in Chrome or Edge.</div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="color:var(--accent);font-weight:600;margin-bottom:.5rem;">🎤 Voice — No installs needed!</div>
+        <div style="color:var(--muted);font-size:.88rem;line-height:1.6;">
+          Voice uses the <strong style="color:var(--text);">Web Speech API</strong> built into Chrome & Edge.
+          No Whisper, no ffmpeg, no microphone libraries.<br>
+          Just click <strong style="color:var(--accent);">Start Recording</strong>, speak, click <strong style="color:var(--danger);">Stop</strong>,
+          edit if needed, then <strong style="color:var(--accent3);">Submit</strong>.
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+        <thead><tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:.5rem;text-align:left;color:var(--muted);">Task</th>
+          <th style="padding:.5rem;text-align:left;color:var(--muted);">Model</th>
+          <th style="padding:.5rem;text-align:left;color:var(--muted);">Pull Command</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:.5rem;color:var(--text);">HR Questions</td><td style="padding:.5rem;color:var(--accent2);">llama3</td><td style="padding:.5rem;font-family:var(--mono);font-size:.78rem;color:var(--muted);">ollama pull llama3</td></tr>
+          <tr><td style="padding:.5rem;color:var(--text);">Technical QA</td><td style="padding:.5rem;color:var(--accent2);">deepseek-coder</td><td style="padding:.5rem;font-family:var(--mono);font-size:.78rem;color:var(--muted);">ollama pull deepseek-coder</td></tr>
+          <tr><td style="padding:.5rem;color:var(--text);">Fast / Low RAM</td><td style="padding:.5rem;color:var(--accent2);">phi3</td><td style="padding:.5rem;font-family:var(--mono);font-size:.78rem;color:var(--muted);">ollama pull phi3</td></tr>
+          <tr><td style="padding:.5rem;color:var(--text);">Tiny RAM</td><td style="padding:.5rem;color:var(--accent2);">tinyllama</td><td style="padding:.5rem;font-family:var(--mono);font-size:.78rem;color:var(--muted);">ollama pull tinyllama</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div><!-- /shell -->
+
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+const state = {
+  questions:   [],   // [{text, type}]
+  currentQ:    0,
+  answers:     [],   // [{q, a}]
+  scores:      [],   // [{overall, technical, clarity, confidence, feedback, …}]
+  mode:        'text',  // 'text' | 'voice'
+  voiceText:   '',
+  isRecording: false,
+};
+
+// ─────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const cfg = () => ({
+  role:  $('sb-role').value,
+  level: $('sb-level').value,
+  type:  $('sb-type').value,
+  num:   parseInt($('sb-num').value),
+  model: $('sb-model').value,
+});
+
+function showSpinner(txt='Loading…'){
+  $('spinner-text').textContent = txt;
+  $('spinner').style.display    = 'flex';
+}
+function hideSpinner(){ $('spinner').style.display = 'none'; }
+
+function toast(msg, ok=true){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.borderColor = ok ? 'var(--accent3)' : 'var(--danger)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Update sidebar tags when controls change
+function syncSidebar(){
+  const c = cfg();
+  $('tag-role').textContent  = c.role;
+  $('tag-level').textContent = c.level;
+  $('tag-type').textContent  = c.type;
+  const suggested = c.type === 'Technical' ? 'deepseek-coder' : 'llama3';
+  $('model-tag').textContent = `💡 Suggested: ${suggested}`;
+}
+['sb-role','sb-level','sb-type','sb-num','sb-model'].forEach(id => {
+  $(id).addEventListener('change', syncSidebar);
+  $(id).addEventListener('input',  syncSidebar);
+});
+
+// ─────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────
+function showTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b  => b.classList.remove('active'));
+  $(`tab-${name}`).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const map  = {interview:0, feedback:1, resume:2, guide:3};
+  btns[map[name]].classList.add('active');
+}
+
+// ─────────────────────────────────────────────────────────────
+// INTERVIEW FLOW
+// ─────────────────────────────────────────────────────────────
+async function startInterview(){
+  const c = cfg();
+  showSpinner('Generating questions with Ollama…');
+  try {
+    const res = await fetch('/api/start', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        role: c.role, level: c.level, interview_type: c.type,
+        num_questions: c.num, model: c.model
+      })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    state.questions = data.questions;
+    state.currentQ  = 0;
+    state.answers   = [];
+    state.scores    = [];
+    state.voiceText = '';
+    hideSpinner();
+    $('screen-start').style.display     = 'none';
+    $('screen-interview').style.display = 'block';
+    $('screen-complete').style.display  = 'none';
+    renderQuestion();
+  } catch(e){
+    hideSpinner();
+    toast('Could not reach Ollama. Is it running? (ollama serve)', false);
+    console.error(e);
+  }
+}
+
+function renderQuestion(){
+  const qi  = state.currentQ;
+  const tot = state.questions.length;
+  const q   = state.questions[qi];
+  const pct = Math.round(qi / tot * 100);
+
+  $('prog-label').textContent   = `Question ${qi+1} of ${tot}`;
+  $('prog-pct').textContent     = `${pct}%`;
+  $('pbar-fill').style.width    = `${pct}%`;
+  $('q-type-label').textContent = q.type === 'Technical' ? '⚡ Technical Round' : '🤝 HR Round';
+  $('q-text').textContent       = q.text;
+
+  // Always reset text area
+  $('text-answer').value = '';
+
+  // Clear voice fully (safe even if nothing is recording)
+  clearVoice();
+
+  // Hide feedback from previous question
+  $('quick-feedback').style.display = 'none';
+
+  // IMPORTANT: explicitly disable submit — do NOT call updateSubmitBtn here
+  // because clearVoice already did, and text-answer is empty so it's disabled correctly.
+  $('submit-btn').disabled = true;
+
+  // Re-apply current mode without toggling
+  const m = state.mode;
+  $('mode-text-btn').classList.toggle('active', m==='text');
+  $('mode-voice-btn').classList.toggle('active', m==='voice');
+  $('text-input-area').style.display  = m==='text'  ? 'block' : 'none';
+  $('voice-input-area').style.display = m==='voice' ? 'block' : 'none';
+}
+
+function setMode(m){
+  state.mode = m;
+  $('mode-text-btn').classList.toggle('active', m==='text');
+  $('mode-voice-btn').classList.toggle('active', m==='voice');
+  $('text-input-area').style.display  = m==='text'  ? 'block' : 'none';
+  $('voice-input-area').style.display = m==='voice' ? 'block' : 'none';
+  updateSubmitBtn();
+}
+
+// Enable submit when there's content
+$('text-answer').addEventListener('input', updateSubmitBtn);
+function updateSubmitBtn(){
+  const txt = state.mode==='text'
+    ? $('text-answer').value.trim()
+    : ($('transcript-edit').value.trim() || state.voiceText.trim());
+  $('submit-btn').disabled = !txt;
+}
+
+function getAnswer(){
+  return state.mode==='text'
+    ? $('text-answer').value.trim()
+    : ($('transcript-edit').value.trim() || state.voiceText.trim());
+}
+
+async function submitAnswer(){
+  const answer = getAnswer();
+  if(!answer){ toast('Please provide an answer first.', false); return; }
+
+  const c  = cfg();
+  const qi = state.currentQ;
+  const q  = state.questions[qi];
+
+  // Disable button immediately so double-clicks can't fire
+  $('submit-btn').disabled = true;
+  showSpinner('Analysing your answer with Ollama…');
+
+  try {
+    const res = await fetch('/api/score', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        question: q.text,
+        answer,
+        role:  c.role,
+        level: c.level,
+        model: c.model
+      })
+    });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const score = await res.json();
+
+    state.answers.push({q: q.text, a: answer});
+    state.scores.push(score);
+    updateStats();
+    hideSpinner();
+    showQuickFeedback(score);
+
+    // Show feedback for 2.5s, then advance — button stays disabled during wait
+    // We DON'T re-enable the button here; renderQuestion/clearVoice handle state for next Q
+    await new Promise(r => setTimeout(r, 2500));
+    advanceQuestion();
+
+  } catch(e){
+    hideSpinner();
+    toast('Scoring failed. Is Ollama running?', false);
+    console.error(e);
+    // Re-enable so they can try again
+    $('submit-btn').disabled = !getAnswer();
+  }
+}
+
+function showQuickFeedback(score){
+  const ov = score.overall ?? 0;
+  const bc = ov>=7 ? 's-high' : ov>=4 ? 's-mid' : 's-low';
+  $('quick-feedback').innerHTML = `
+    <div class="feedback-card">
+      <div class="feedback-header">
+        <strong>Quick Feedback</strong>
+        <span class="score-badge ${bc}">${ov}/10</span>
+      </div>
+      <div class="feedback-text">${score.feedback || ''}</div>
+    </div>`;
+  $('quick-feedback').style.display = 'block';
+}
+
+function advanceQuestion(){
+  state.currentQ++;
+  if(state.currentQ >= state.questions.length){
+    $('screen-interview').style.display = 'none';
+    $('screen-complete').style.display  = 'block';
+    buildFeedbackTab();
+    return;
+  }
+  renderQuestion();
+}
+
+function skipQuestion(){
+  state.answers.push({q: state.questions[state.currentQ].text, a:'[Skipped]'});
+  state.scores.push({overall:0,technical:0,clarity:0,confidence:0,feedback:'Question skipped.'});
+  updateStats();
+  advanceQuestion();
+}
+
+function resetSession(){
+  state.questions=[]; state.currentQ=0; state.answers=[]; state.scores=[];
+  state.voiceText=''; state.isRecording=false;
+  stopRecording();
+  $('screen-start').style.display     = 'block';
+  $('screen-interview').style.display = 'none';
+  $('screen-complete').style.display  = 'none';
+  $('stat-card').style.display        = 'none';
+  $('stat-count').textContent         = '';
+  $('feedback-empty').style.display   = 'block';
+  $('feedback-content').style.display = 'none';
+}
+
+function updateStats(){
+  if(!state.scores.length) return;
+  const avg = state.scores.reduce((a,s) => a+(s.overall||0), 0) / state.scores.length;
+  $('stat-avg').textContent   = avg.toFixed(1);
+  $('stat-count').textContent = `✅ ${state.scores.length} answered`;
+  $('stat-card').style.display = 'block';
+}
+
+// ─────────────────────────────────────────────────────────────
+// VOICE — Web Speech API (free, built-in Chrome/Edge)
+// ─────────────────────────────────────────────────────────────
+let recognition  = null;
+let finalTranscript = '';
+let timerInterval   = null;
+let timerSecs       = 0;
+let rafId           = null;
+let recStopping     = false;  // guard: we intentionally stopped, don't restart
+
+// Build waveform bars once
+(function buildWave(){
+  const wf = $('waveform');
+  for(let i = 0; i < 32; i++){
+    const b = document.createElement('div');
+    b.className = 'wbar';
+    b.id = `wbar${i}`;
+    wf.appendChild(b);
+  }
+})();
+
+function animateWave(){
+  if(!state.isRecording){ resetWave(); return; }
+  for(let i = 0; i < 32; i++){
+    const b = $(`wbar${i}`);
+    if(b){ b.style.height = (Math.random()*30+4)+'px'; b.style.background=`hsl(${260+i*3},70%,60%)`; }
+  }
+  rafId = requestAnimationFrame(animateWave);
+}
+function resetWave(){
+  cancelAnimationFrame(rafId); rafId = null;
+  for(let i = 0; i < 32; i++){
+    const b = $(`wbar${i}`);
+    if(b){ b.style.height='4px'; b.style.background='var(--border)'; }
+  }
+}
+
+function toggleRecording(){
+  state.isRecording ? stopRecording() : startRecording();
+}
+
+function startRecording(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    $('v-status-text').textContent = '❌ Use Chrome or Edge for voice input';
+    return;
+  }
+  // Reset state for fresh recording
+  recStopping = false;
+  finalTranscript = '';
+  $('transcript-display').innerHTML = '<span class="transcript-empty">Listening…</span>';
+  $('transcript-edit-wrap').style.display = 'none';
+  $('transcript-edit').value = '';
+  state.voiceText = '';
+
+  recognition = new SR();
+  recognition.continuous     = true;
+  recognition.interimResults = true;
+  recognition.lang           = 'en-US';
+
+  recognition.onresult = e => {
+    let fin = '', intr = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      e.results[i].isFinal
+        ? fin  += e.results[i][0].transcript + ' '
+        : intr += e.results[i][0].transcript;
+    }
+    if(fin) finalTranscript += fin;
+    $('transcript-display').innerHTML =
+      (finalTranscript ? `<span>${finalTranscript}</span>` : '') +
+      (intr ? `<span class="transcript-interim">${intr}</span>` : '');
+  };
+
+  recognition.onerror = e => {
+    // 'no-speech' is harmless — browser fires it after silence, we restart
+    if(e.error === 'no-speech') return;
+    $('v-status-text').textContent = `⚠️ ${e.error}`;
+    if(e.error === 'not-allowed') toast('Microphone permission denied.', false);
+  };
+
+  // Auto-restart ONLY if we didn't intentionally stop
+  recognition.onend = () => {
+    if(state.isRecording && !recStopping){
+      try { recognition.start(); } catch(_){}
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch(e){
+    toast('Could not start microphone: ' + e.message, false);
+    return;
+  }
+
+  state.isRecording = true;
+
+  $('v-dot').className           = 'v-dot rec';
+  $('v-status-text').textContent = '🔴 Recording…';
+  $('rec-btn').textContent       = '⏹ Stop Recording';
+  $('rec-btn').className         = 'btn btn-danger';
+
+  timerSecs = 0;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerSecs++;
+    const m = String(Math.floor(timerSecs/60)).padStart(2,'0');
+    const s = String(timerSecs % 60).padStart(2,'0');
+    $('v-timer').textContent = `${m}:${s}`;
+  }, 1000);
+
+  animateWave();
+}
+
+function stopRecording(){
+  // Set guard BEFORE calling .stop() so onend doesn't restart
+  recStopping     = true;
+  state.isRecording = false;
+  clearInterval(timerInterval);
+  resetWave();
+
+  if(recognition){
+    try { recognition.stop(); } catch(_){}
+    recognition = null;
+  }
+
+  $('v-dot').className           = 'v-dot done';
+  $('v-status-text').textContent = '✅ Done — edit if needed, then Submit';
+  $('rec-btn').textContent       = '🎙 Record Again';
+  $('rec-btn').className         = 'btn btn-primary';
+
+  // Commit whatever was captured
+  state.voiceText = finalTranscript.trim();
+
+  if(state.voiceText){
+    $('transcript-edit').value              = state.voiceText;
+    $('transcript-edit-wrap').style.display = 'block';
+  }
+  updateSubmitBtn();
+}
+
+$('transcript-edit').addEventListener('input', () => {
+  state.voiceText = $('transcript-edit').value.trim();
+  updateSubmitBtn();
+});
+
+function clearVoice(){
+  // Kill any active recognizer first
+  recStopping     = true;
+  state.isRecording = false;
+  clearInterval(timerInterval);
+  resetWave();
+  if(recognition){ try{ recognition.stop(); }catch(_){} recognition = null; }
+
+  finalTranscript = '';
+  state.voiceText = '';
+  $('transcript-display').innerHTML      = '<span class="transcript-empty">Your transcript will appear here as you speak…</span>';
+  $('transcript-edit-wrap').style.display = 'none';
+  $('transcript-edit').value             = '';
+  $('v-dot').className                   = 'v-dot';
+  $('v-status-text').textContent         = 'Ready — click Start Recording';
+  $('v-timer').textContent               = '00:00';
+  $('rec-btn').textContent               = '🎙 Start Recording';
+  $('rec-btn').className                 = 'btn btn-primary';
+  updateSubmitBtn();
+}
+
+// ─────────────────────────────────────────────────────────────
+// FEEDBACK TAB
+// ─────────────────────────────────────────────────────────────
+function buildFeedbackTab(){
+  if(!state.scores.length) return;
+  $('feedback-empty').style.display   = 'none';
+  $('feedback-content').style.display = 'block';
+
+  const sc = state.scores;
+  const avg = k => sc.reduce((a,s)=>a+(s[k]||0),0)/sc.length;
+  const ao=avg('overall'), at=avg('technical'), ac=avg('confidence'), al=avg('clarity');
+
+  // Metric cards
+  const metrics = [
+    {label:'Overall',    val:ao},
+    {label:'Technical',  val:at},
+    {label:'Confidence', val:ac},
+    {label:'Clarity',    val:al},
+  ];
+  $('metrics-grid').innerHTML = metrics.map(m=>{
+    const c = m.val>=7?'var(--accent3)':m.val>=4?'var(--warn)':'var(--danger)';
+    return `<div class="metric-card">
+      <div class="metric-num" style="color:${c}">${m.val.toFixed(1)}</div>
+      <div class="metric-lbl">${m.label}</div>
+    </div>`;
+  }).join('');
+
+  // Bar chart
+  const maxV = Math.max(...sc.map(s=>s.overall||0), 1);
+  $('chart-bars').innerHTML = sc.map((s,i)=>{
+    const h = Math.max(4, (s.overall/10)*100);
+    return `<div class="chart-col">
+      <div class="chart-vlbl">${(s.overall||0).toFixed(1)}</div>
+      <div class="chart-bar" style="height:${h}%"></div>
+      <div class="chart-qlbl">Q${i+1}</div>
+    </div>`;
+  }).join('');
+
+  // Answer review
+  $('answer-review').innerHTML = state.answers.map((ans,i)=>{
+    const s   = state.scores[i];
+    const ov  = s.overall||0;
+    const bc  = ov>=7?'s-high':ov>=4?'s-mid':'s-low';
+    const sub = [
+      {label:'Technical', key:'technical'},
+      {label:'Confidence',key:'confidence'},
+      {label:'Clarity',   key:'clarity'},
+    ].map(x=>{
+      const v = s[x.key]||0;
+      const c = v>=7?'var(--accent3)':v>=4?'var(--warn)':'var(--danger)';
+      return `<div class="sub-score-item">
+        <div class="label">${x.label}</div>
+        <div class="sub-pbar"><div class="sub-pbar-fill" style="width:${v*10}%;background:${c}"></div></div>
+        <div class="sub-val" style="color:${c}">${v}/10</div>
+      </div>`;
+    }).join('');
+    return `<div class="review-item">
+      <div class="review-header" onclick="toggleReview(this)">
+        <div class="review-q">Q${i+1}: ${ans.q.substring(0,75)}${ans.q.length>75?'…':''}</div>
+        <span class="score-badge ${bc}">${ov}/10</span>
+      </div>
+      <div class="review-body">
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:.3rem;">YOUR ANSWER</div>
+        <div class="answer-text">${ans.a}</div>
+        <div class="sub-scores">${sub}</div>
+        <div class="ai-feedback">
+          <div class="ai-fb-label">AI Feedback</div>
+          <div class="ai-fb-text">${s.feedback||''}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleReview(header){
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function exportReport(){
+  if(!state.scores.length){ toast('No data to export.', false); return; }
+  const sc=state.scores, av=state.answers;
+  const avg = k => sc.reduce((a,s)=>a+(s[k]||0),0)/sc.length;
+  const report = {
+    timestamp: new Date().toISOString(),
+    config: cfg(),
+    summary: {overall:avg('overall').toFixed(2),technical:avg('technical').toFixed(2),
+              confidence:avg('confidence').toFixed(2),clarity:avg('clarity').toFixed(2)},
+    questions: av.map((a,i)=>({question:a.q,answer:a.a,score:sc[i]}))
+  };
+  const blob = new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download='interview_report.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Report downloaded!');
+}
+
+function printReport(){
+  window.print();
+}
+
+// ─────────────────────────────────────────────────────────────
+// RESUME MODE
+// ─────────────────────────────────────────────────────────────
+async function startResumeInterview(){
+  const text = $('resume-text').value.trim();
+  if(!text){ toast('Paste your resume text first.', false); return; }
+  const c = cfg();
+  showSpinner('Generating questions from resume…');
+  try {
+    const res = await fetch('/api/resume-questions',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({resume_text:text, num_questions:c.num, model:c.model})
+    });
+    const data = await res.json();
+    state.questions = data.questions;
+    state.currentQ=0; state.answers=[]; state.scores=[]; state.voiceText='';
+    hideSpinner();
+    showTab('interview');
+    $('screen-start').style.display     = 'none';
+    $('screen-interview').style.display = 'block';
+    $('screen-complete').style.display  = 'none';
+    renderQuestion();
+    toast('Resume questions generated!');
+  } catch(e){
+    hideSpinner();
+    toast('Failed. Is Ollama running?', false);
+  }
+}
+
+function clearResume(){ $('resume-text').value=''; }
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+syncSidebar();
+</script>
+</body>
+</html>

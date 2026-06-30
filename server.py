@@ -280,6 +280,19 @@ def save_report(req: ReportRequest):
 # ═══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     import uvicorn
+    import webbrowser
+
+    url = "http://localhost:8000"
+
     print("\n🎯 AI Interview Coach")
-    print("   → http://localhost:8000\n")
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    print(f"→ {url}\n")
+
+    # Opens browser automatically
+    webbrowser.open(url)
+
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
